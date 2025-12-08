@@ -34,7 +34,7 @@ def parseName(system):
     data = parseData.get("systems",[])
     print(data[0]["id"])
 
-   #test
+   #test22
   
     
 parseName(start)
