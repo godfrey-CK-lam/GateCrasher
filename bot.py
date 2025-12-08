@@ -10,13 +10,9 @@ args = parser.parse_args()
 start = '\"' + args.start + '\"'
 end = '\"' + args.end + '\"'
 
+conn = http.client.HTTPSConnection("esi.evetech.net")
 
-
-def parseName(system):
-    conn = http.client.HTTPSConnection("esi.evetech.net")
-    payload = "[\n" + system + "\n]"
-
-    headers = {
+headers = {
         'Accept-Language': "en",
         'If-None-Match': "",
         'X-Compatibility-Date': "2025-11-06",
@@ -24,6 +20,10 @@ def parseName(system):
         'Content-Type': "application/json",
         'Accept': "application/json"
     }
+# parse a system name to the id
+def parseName(system):
+    payload = "[\n" + system + "\n]"
+
 
     conn.request("POST", "/universe/ids", payload, headers)
 
@@ -32,13 +32,33 @@ def parseName(system):
     parseData = json.loads(allData)    
 
     data = parseData.get("systems",[])
-    print(data[0]["id"])
+    return data[0]["id"]
 
-   #test222
   
-    
-parseName(start)
-parseName(end)
+# parse a system ID to a name
+def parseID(id):
+    payload = "[\n  "+ str(id) +"\n]"
+
+    conn.request("POST", "/universe/names", payload, headers)
+
+    res = conn.getresponse()
+    alldata = res.read()
+    parseData = json.loads(alldata)    
+    print(parseData[0]['name'])
+        
 
 
+print(start)
+startid = parseName(start)
+endid = parseName(end)
 
+print(startid)
+print(endid)
+
+payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
+conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
+
+res = conn.getresponse()
+data = res.read()
+
+print(data.decode("utf-8"))
