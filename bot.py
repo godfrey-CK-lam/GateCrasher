@@ -31,7 +31,7 @@ def parseName(system):
     allData = res.read()
     parseData = json.loads(allData)    
 
-    data = parseData.get("systems",[])
+    data = parseData.get("systems")
     return data[0]["id"]
 
   
@@ -44,16 +44,16 @@ def parseID(id):
     res = conn.getresponse()
     alldata = res.read()
     parseData = json.loads(alldata)    
-    print(parseData[0]['name'])
+    return parseData[0]['name']
         
 
 
-print(start)
+#print(start)
 startid = parseName(start)
 endid = parseName(end)
 
-print(startid)
-print(endid)
+#print(startid)
+#print(endid)
 
 payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
 conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
@@ -61,4 +61,10 @@ conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
 res = conn.getresponse()
 data = res.read()
 
-print(data.decode("utf-8"))
+
+parseData = json.loads(data)    
+systems = (parseData['route'])
+
+print()
+for system in range(len(systems)):
+  print(parseID(systems[system]))
