@@ -3,26 +3,7 @@ import http.client
 import json
 import datetime
 
-parser = argparse.ArgumentParser()
-parser.add_argument('start', type=str)
-parser.add_argument('end', type=str)
-parser.add_argument('preference', type = str)
-args = parser.parse_args()
 
-start = '\"' + args.start + '\"'
-end = '\"' + args.end + '\"'
-preference = '\"' + args.preference + '\"'
-
-conn = http.client.HTTPSConnection("esi.evetech.net")
-
-headers = {
-        'Accept-Language': "en",
-        'If-None-Match': "",
-        'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
-        'X-Tenant': "",
-        'Content-Type': "application/json",
-        'Accept': "application/json"
-    }
 # parse a system name to the id
 def parseName(system):
     payload = "[\n" + system + "\n]"
@@ -72,21 +53,49 @@ def getKills(id):
         kills = result["pod_kills"] + result["ship_kills"]
     return kills
 
+def findRoute(start, end):
+    startid = parseName(start)
+    endid = parseName(end)
 
-startid = parseName(start)
-endid = parseName(end)
+    payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\":" + preference + ",\n  \"security_penalty\": 50\n}"
+    conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
 
-print(preference)
+    res = conn.getresponse()
+    data = res.read()
+    theData = json.loads(data)    
 
-payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\":" + preference + ",\n  \"security_penalty\": 50\n}"
-conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
+    idList = (theData['route'])
+    route = []
 
-res = conn.getresponse()
-data = res.read()
-theData = json.loads(data)    
+    for i in range(len(idList)):
+        route.append(getInfo(idList[i]))
 
-idList = (theData['route'])
+    return route
 
-print(start + " to " + end + " in " + str(len(idList)) + " jumps")
-for i in range(len(idList)):
-    print(getInfo(idList[i]))
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('start', type=str)
+parser.add_argument('end', type=str)
+parser.add_argument('preference', type = str)
+args = parser.parse_args()
+
+start = '\"' + args.start + '\"'
+end = '\"' + args.end + '\"'
+preference = '\"' + args.preference + '\"'
+
+conn = http.client.HTTPSConnection("esi.evetech.net")
+
+headers = {
+        'Accept-Language': "en",
+        'If-None-Match': "",
+        'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
+        'X-Tenant': "",
+        'Content-Type': "application/json",
+        'Accept': "application/json"
+    }
+
+
+
+print(findRoute(start, end))
