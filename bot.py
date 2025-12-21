@@ -6,9 +6,12 @@ import datetime
 
 # parse a system name to the id
 def parseName(system):
-    payload = "[\n" + system + "\n]"
-
-
+    
+    payload =  "[\n  \"string\"\n]"
+    theData = json.loads(payload)
+    theData[0] = system
+    payload = json.dumps(theData, indent=2)
+   
     conn.request("POST", "/universe/ids", payload, headers)
 
     res = conn.getresponse()
@@ -21,7 +24,10 @@ def parseName(system):
   
 # parse a system ID to a name
 def parseID(id):
-    payload = "[\n  "+ str(id) +"\n]"
+    payload =  "[\n  \"string\"\n]"
+    theData = json.loads(payload)
+    theData[0] = str(id)
+    payload = json.dumps(theData, indent=2)
 
     conn.request("POST", "/universe/names", payload, headers)
 
@@ -75,14 +81,14 @@ def findRoute(start, end):
 
 
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description="argument parser")
 parser.add_argument('start', type=str)
 parser.add_argument('end', type=str)
 parser.add_argument('preference', type = str)
 args = parser.parse_args()
 
-start = '\"' + args.start + '\"'
-end = '\"' + args.end + '\"'
+start = args.start
+end = args.end
 preference = '\"' + args.preference + '\"'
 
 conn = http.client.HTTPSConnection("esi.evetech.net")
@@ -97,5 +103,7 @@ headers = {
     }
 
 
+
+tempRoute = [['Shintaht', -0.1, 0], ['H6-CX8', -0.1, 0], ['9UY4-H', -0.1, 8]]
 
 print(findRoute(start, end))
