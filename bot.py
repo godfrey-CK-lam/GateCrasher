@@ -1,6 +1,7 @@
 import argparse
 import http.client
 import json
+import datetime
 
 parser = argparse.ArgumentParser()
 parser.add_argument('start', type=str)
@@ -15,7 +16,7 @@ conn = http.client.HTTPSConnection("esi.evetech.net")
 headers = {
         'Accept-Language': "en",
         'If-None-Match': "",
-        'X-Compatibility-Date': "2025-11-06",
+        'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
         'X-Tenant': "",
         'Content-Type': "application/json",
         'Accept': "application/json"
@@ -42,10 +43,43 @@ def parseID(id):
     conn.request("POST", "/universe/names", payload, headers)
 
     res = conn.getresponse()
-    alldata = res.read()
-    parseData = json.loads(alldata)    
+    data = res.read()
+    parseData = json.loads(data)    
     return parseData[0]['name']
-        
+
+def getInfo(id):
+    conn.request("GET", "/universe/systems/" + str(id), headers=headers)
+    
+    res = conn.getresponse()
+    data = res.read()
+    parseData = json.loads(data)   
+    
+ 
+    
+    return [parseData['name'], round(parseData['security_status'], 1), getKills(id)]
+
+def getKills(id):
+    conn.request("GET", "/universe/system_kills", headers=headers)
+
+    res = conn.getresponse()
+    data = res.read()
+    parseData = json.loads(data)  
+
+    kills = 0
+    result = next((obj for obj in parseData if obj["system_id"] == id),0)
+    print(id)
+    # print(parseData)
+
+    print(result)
+
+    
+    
+    if result:
+        kills = result["pod_kills"] + result["ship_kills"]
+  
+    return kills
+
+
 
 
 #print(start)
@@ -55,16 +89,27 @@ endid = parseName(end)
 #print(startid)
 #print(endid)
 
-payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
-conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
+#payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
+#conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
 
-res = conn.getresponse()
-data = res.read()
+#res = conn.getresponse()
+#data = res.read()
 
 
-parseData = json.loads(data)    
-systems = (parseData['route'])
+#theData = json.loads(data)    
 
-print()
-for system in range(len(systems)):
-  print(parseID(systems[system]))
+
+#idList = (theData['route'])
+#systems = []
+
+
+print(getInfo(30000240))
+
+#for i in range(len(idList)):
+#    print(idList[i])
+
+
+#print(start + " to " + end + " in " + str(len(systems)) + " jumps")
+#print("")
+#for system in range(len(systems)):
+#  print(parseID(systems[system]))
