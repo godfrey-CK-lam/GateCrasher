@@ -6,10 +6,12 @@ import datetime
 parser = argparse.ArgumentParser()
 parser.add_argument('start', type=str)
 parser.add_argument('end', type=str)
+parser.add_argument('preference', type = str)
 args = parser.parse_args()
 
 start = '\"' + args.start + '\"'
 end = '\"' + args.end + '\"'
+preference = '\"' + args.preference + '\"'
 
 conn = http.client.HTTPSConnection("esi.evetech.net")
 
@@ -54,8 +56,6 @@ def getInfo(id):
     data = res.read()
     parseData = json.loads(data)   
     
- 
-    
     return [parseData['name'], round(parseData['security_status'], 1), getKills(id)]
 
 def getKills(id):
@@ -66,50 +66,27 @@ def getKills(id):
     parseData = json.loads(data)  
 
     kills = 0
-    result = next((obj for obj in parseData if obj["system_id"] == id),0)
-    print(id)
-    # print(parseData)
-
-    print(result)
-
-    
+    result = next((obj for obj in parseData if obj["system_id"] == id),0) 
     
     if result:
         kills = result["pod_kills"] + result["ship_kills"]
-  
     return kills
 
 
-
-
-#print(start)
 startid = parseName(start)
 endid = parseName(end)
 
-#print(startid)
-#print(endid)
+print(preference)
 
-#payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
-#conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
+payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\":" + preference + ",\n  \"security_penalty\": 50\n}"
+conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
 
-#res = conn.getresponse()
-#data = res.read()
+res = conn.getresponse()
+data = res.read()
+theData = json.loads(data)    
 
+idList = (theData['route'])
 
-#theData = json.loads(data)    
-
-
-#idList = (theData['route'])
-#systems = []
-
-
-print(getInfo(30000240))
-
-#for i in range(len(idList)):
-#    print(idList[i])
-
-
-#print(start + " to " + end + " in " + str(len(systems)) + " jumps")
-#print("")
-#for system in range(len(systems)):
-#  print(parseID(systems[system]))
+print(start + " to " + end + " in " + str(len(idList)) + " jumps")
+for i in range(len(idList)):
+    print(getInfo(idList[i]))
