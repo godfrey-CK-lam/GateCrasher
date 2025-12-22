@@ -3,9 +3,9 @@ import http.client
 import json
 import datetime
 
-conn = http.client.HTTPSConnection("esi.evetech.net")
+CONN = http.client.HTTPSConnection("esi.evetech.net")
 
-headers = {
+HEADERS = {
         'Accept-Language': "en",
         'If-None-Match': "",
         'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
@@ -14,18 +14,17 @@ headers = {
         'Accept': "application/json"
     }
 
-
 # parse a system name to the id
-def getID(system):
+def get_id(system):
     
     payload =  "[\n  \"string\"\n]"
     myPayload = json.loads(payload)
     myPayload[0] = system
     payload = json.dumps(myPayload, indent=2)
    
-    conn.request("POST", "/universe/ids", payload, headers)
+    CONN.request("POST", "/universe/ids", payload, HEADERS)
 
-    res = conn.getresponse()
+    res = CONN.getresponse()
     allData = res.read()
     parseData = json.loads(allData)    
 
@@ -34,32 +33,32 @@ def getID(system):
 
   
 # parse a system ID to a name
-def getName(id):
+def get_name(id):
     payload =  "[\n  \"string\"\n]"
     myPayload = json.loads(payload)
     myPayload[0] = str(id)
     payload = json.dumps(myPayload, indent=2)
 
-    conn.request("POST", "/universe/names", payload, headers)
+    CONN.request("POST", "/universe/names", payload, HEADERS)
 
-    res = conn.getresponse()
+    res = CONN.getresponse()
     data = res.read()
     jsonData = json.loads(data)    
     return jsonData[0]['name']
 
-def getInfo(id):
-    conn.request("GET", "/universe/systems/" + str(id), headers=headers)
+def get_info(id):
+    CONN.request("GET", "/universe/systems/" + str(id), headers=HEADERS)
     
-    res = conn.getresponse()
+    res = CONN.getresponse()
     data = res.read()
     jsonData = json.loads(data)   
     
-    return [jsonData['name'], round(jsonData['security_status'], 1), getKills(id)]
+    return [jsonData['name'], round(jsonData['security_status'], 1), get_kills(id)]
 
-def getKills(id):
-    conn.request("GET", "/universe/system_kills", headers=headers)
+def get_kills(id):
+    CONN.request("GET", "/universe/system_kills", headers=HEADERS)
 
-    res = conn.getresponse()
+    res = CONN.getresponse()
     data = res.read()
     parseData = json.loads(data)  
 
@@ -70,31 +69,35 @@ def getKills(id):
         kills = result["pod_kills"] + result["ship_kills"]
     return kills
 
-def findRoute(start, end, preference, avoid):
-    startid = getID(start)
-    endid = getID(end)
+def find_route(args):
+    startid = get_id(args.start)
+    endid = get_id(args.end)
 
     payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
     myPayload = json.loads(payload)
-    myPayload['preference'] = preference
-    myPayload['avoid_systems'] = avoid
+    myPayload['preference'] = args.preference
+    myPayload['avoid_systems'] = args.avoid
     payload = json.dumps(myPayload, indent=2)
-    
-    conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
 
-    res = conn.getresponse()
+
+    
+    CONN.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, HEADERS)
+
+    res = CONN.getresponse()
     data = res.read()
     theData = json.loads(data)    
+
+
  
     idList = (theData['route'])
     route = []
 
     for i in range(len(idList)):
-        route.append(getInfo(idList[i]))
+        route.append(get_info(idList[i]))
 
     return route
 
-def getArgs():
+def get_args():
     parser = argparse.ArgumentParser(description="Displays information about a route from one system to another")
     parser.add_argument('start', type=str,help=("The starting system"))
     parser.add_argument('end', type=str, help="The destination system")
@@ -103,7 +106,7 @@ def getArgs():
 
     return parser.parse_args()
 
-def transformArgs(args):
+def transform(args):
 
     # print(vars(args))
 
@@ -118,7 +121,7 @@ def transformArgs(args):
 
     if args.avoid:
         for systems in range(len(args.avoid)):
-            args.avoid[systems] = getID(args.avoid[systems])
+            args.avoid[systems] = get_id(args.avoid[systems])
     else:
         args.avoid = [30000001]
 
@@ -127,9 +130,11 @@ def transformArgs(args):
 
 def main():
 
-    args = getArgs()
-    args = transformArgs(args)
- 
+    args = get_args()
+    args = transform(args)
+    print(find_route(args))
 
-main()
+ 
+if __name__ == "__main__":
+    main()
 
