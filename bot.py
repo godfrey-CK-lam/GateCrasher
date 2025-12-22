@@ -14,7 +14,7 @@ HEADERS = {
     "Accept": "application/json",
 }
 
-DIVIDER = ("======================================================")
+DIVIDER = ("===========================================================")
 
 # parse a system name to the id
 
@@ -172,18 +172,20 @@ def display_route(route, args):
 
     if isinstance(route, str):
         print(DIVIDER)
-        print('{:^52}'.format(*["GateCrasher - " + route]))
+        print('{:^57}'.format(*["GateCrasher - No route found"]))
+        print(DIVIDER)
+        print('{:^57}'.format(*[route]))
         print(DIVIDER)
         return
 
     print(DIVIDER)
-    print('{:^52}'.format(*["GateCrasher - " + args.start +
+    print('{:^57}'.format(*["GateCrasher - " + args.start +
           " to " + args.end + " in " + str(len(route)) + " jumps"]))
     print(DIVIDER)
-    print('{:^18} {:^18}  {:^18}'.format(
-        *['System name', 'Sec', 'Kills (approximate)']))
+    print('{:^19} {:^19}  {:^19}'.format(
+        *['System name', 'Sec', 'Kills (approx)']))
     for row in route:
-        print('{:^18} {:^18}  {:^18}'.format(*row))
+        print('{:^19} {:^19}  {:^19}'.format(*row))
     print(DIVIDER)
     return
 
