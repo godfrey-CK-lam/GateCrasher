@@ -3,6 +3,18 @@ import http.client
 import json
 import datetime
 
+conn = http.client.HTTPSConnection("esi.evetech.net")
+
+headers = {
+        'Accept-Language': "en",
+        'If-None-Match': "",
+        'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
+        'X-Tenant': "",
+        'Content-Type': "application/json",
+        'Accept': "application/json"
+    }
+
+
 # parse a system name to the id
 def getID(system):
     
@@ -62,11 +74,10 @@ def findRoute(start, end, preference, avoid):
     startid = getID(start)
     endid = getID(end)
 
-
     payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
     myPayload = json.loads(payload)
     myPayload['preference'] = preference
-    myPayload['avoid_systems'] = avoidSystems
+    myPayload['avoid_systems'] = avoid
     payload = json.dumps(myPayload, indent=2)
     
     conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
@@ -83,54 +94,42 @@ def findRoute(start, end, preference, avoid):
 
     return route
 
+def getArgs():
+    parser = argparse.ArgumentParser(description="Displays information about a route from one system to another")
+    parser.add_argument('start', type=str,help=("The starting system"))
+    parser.add_argument('end', type=str, help="The destination system")
+    parser.add_argument('-p', '--preference', help="Route preferences", choices=["short","unsafe","safe"])
+    parser.add_argument('-a', '--avoid', type=str, help="avoid specific systems", action='store', nargs="+")
 
-conn = http.client.HTTPSConnection("esi.evetech.net")
+    return parser.parse_args()
 
-headers = {
-        'Accept-Language': "en",
-        'If-None-Match': "",
-        'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
-        'X-Tenant': "",
-        'Content-Type': "application/json",
-        'Accept': "application/json"
-    }
+def transformArgs(args):
 
+    # print(vars(args))
 
-parser = argparse.ArgumentParser(description="Displays information about a route from one system to another")
-parser.add_argument('start', type=str,help=("The starting system"))
-parser.add_argument('end', type=str, help="The destination system")
-parser.add_argument('-p', '--preference', help="Route preferences", choices=["short","unsafe","safe"])
-parser.add_argument('-a', '--avoid', type=str, help="avoid specific systems", action='store', nargs="+")
+    if args.preference == "short":
+        args.preference = "Shorter"
+    elif args.preference =="unsafe":
+        args.preference = "LessSecure"
+    elif args.preference =="safe":
+        args.preference = "Safer"
+    else:
+        args.preference = "Shorter"
 
-args = parser.parse_args()
+    if args.avoid:
+        for systems in range(len(args.avoid)):
+            args.avoid[systems] = getID(args.avoid[systems])
+    else:
+        args.avoid = [30000001]
 
-avoidSystems = []
+    #print(vars(args))
+    return args
 
-if args.preference == "short":
-    preference = "Shorter"
-elif args.preference =="unsafe":
-    preference = "LessSecure"
-elif args.preference =="safe":
-    preference = "Safer"
-else:
-    preference = "Shorter"
+def main():
 
-if args.avoid:
-    for systems in range(len(args.avoid)):
-        avoidSystems.append(getID(args.avoid[systems]))
-else:
-    avoidSystems = [30000001]
+    args = getArgs()
+    args = transformArgs(args)
+ 
 
+main()
 
-conn = http.client.HTTPSConnection("esi.evetech.net")
-
-headers = {
-        'Accept-Language': "en",
-        'If-None-Match': "",
-        'X-Compatibility-Date': "2025-12-16", #time.strftime("%Y-%m-%d")
-        'X-Tenant': "",
-        'Content-Type': "application/json",
-        'Accept': "application/json"
-    }
-
-print(findRoute(args.start, args.end, preference, avoidSystems))
