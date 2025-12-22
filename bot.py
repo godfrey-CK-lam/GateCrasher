@@ -20,33 +20,31 @@ HEADERS = {
 def get_id(system):
 
     payload = '[\n  "string"\n]'
-    myPayload = json.loads(payload)
-    myPayload[0] = system
-    payload = json.dumps(myPayload, indent=2)
+    user_payload = json.loads(payload)
+    user_payload[0] = system
+    payload = json.dumps(user_payload, indent=2)
 
     CONN.request("POST", "/universe/ids", payload, HEADERS)
 
     res = CONN.getresponse()
-    allData = res.read()
-    parseData = json.loads(allData)
+    data = json.loads(res.read())
 
-    data = parseData.get("systems")
-    return data[0]["id"]
+    actual = data.get("systems")
+    return actual[0]["id"]
 
 
 # parse a system ID to a name
 def get_name(id):
     payload = '[\n  "string"\n]'
-    myPayload = json.loads(payload)
-    myPayload[0] = str(id)
-    payload = json.dumps(myPayload, indent=2)
+    user_payload = json.loads(payload)
+    user_payload[0] = str(id)
+    payload = json.dumps(user_payload, indent=2)
 
     CONN.request("POST", "/universe/names", payload, HEADERS)
 
     res = CONN.getresponse()
     data = res.read()
-    jsonData = json.loads(data)
-    return jsonData[0]["name"]
+    return json.loads(data)[0]["name"]
 
 
 def get_info(id):
@@ -63,11 +61,11 @@ def get_kills(id):
     CONN.request("GET", "/universe/system_kills", headers=HEADERS)
 
     res = CONN.getresponse()
-    data = res.read()
-    parseData = json.loads(data)
+ 
+    data = json.loads(res.read())
 
     kills = 0
-    result = next((obj for obj in parseData if obj["system_id"] == id), 0)
+    result = next((system for system in data if system["system_id"] == id), 0)
 
     if result:
         kills = result["pod_kills"] + result["ship_kills"]
@@ -79,10 +77,10 @@ def find_route(args):
     endid = get_id(args.end)
 
     payload = '{\n  "avoid_systems": [\n    30000001\n  ],\n  "connections": [\n    {\n      "from": 30000001,\n      "to": 30000001\n    }\n  ],\n  "preference": "Shorter",\n  "security_penalty": 50\n}'
-    myPayload = json.loads(payload)
-    myPayload["preference"] = args.preference
-    myPayload["avoid_systems"] = args.avoid
-    payload = json.dumps(myPayload, indent=2)
+    user_payload = json.loads(payload)
+    user_payload["preference"] = args.preference
+    user_payload["avoid_systems"] = args.avoid
+    payload = json.dumps(user_payload, indent=2)
 
     CONN.request(
         "POST", "/route/" + str(startid) + "/" +
@@ -90,10 +88,9 @@ def find_route(args):
     )
 
     res = CONN.getresponse()
-    data = res.read()
-    theData = json.loads(data)
 
-    idList = theData["route"]
+    data = json.loads(res.read())
+    idList = data["route"]
     route = []
 
     for i in range(len(idList)):
