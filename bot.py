@@ -35,8 +35,7 @@ def get_id(system):
     try:
         return actual[0]["id"]
     except:
-        print(system + " is an invalid system name (please check the spelling!)")
-        exit(1)
+        return system + " is not a valid system"
 
 
 # parse a system ID to a name
@@ -88,6 +87,12 @@ def find_route(args):
     user_payload["avoid_systems"] = args.avoid
     payload = json.dumps(user_payload, indent=2)
 
+   
+    if isinstance(startid, str):
+        return startid
+    elif isinstance(endid, str):
+        return(endid)
+
     CONN.request(
         "POST", "/route/" + str(startid) + "/" +
         str(endid) + "", payload, HEADERS
@@ -96,7 +101,13 @@ def find_route(args):
     res = CONN.getresponse()
 
     data = json.loads(res.read())
+
+    if 'error' in data:
+        return str("No route exists from " + args.start + " to " + args.end)
+        
+
     idList = data["route"]
+
     route = []
 
     for i in range(len(idList)):
@@ -107,10 +118,12 @@ def find_route(args):
 
 def get_args():
 
- 
+    help_text = """
+    Tips: For systems with names with spaces, such as New Caldari, wrap the system in speech marks (e.g New Caldari)
+    """
 
     parser = argparse.ArgumentParser(
-        description="Displays information about a route from one system to another", epilog="HELP"
+        description="Displays information about a route from one system to another", epilog=help_text
     )
     parser.add_argument("start", type=str, help=("The starting system"))
     parser.add_argument("end", type=str, help="The destination system")
@@ -124,7 +137,7 @@ def get_args():
         "-a",
         "--avoid",
         type=str,
-        help="avoid specific systems",
+        help="avoid specific systems (e.g -a Bei Ongund)",
         action="store",
         nargs="+",
     )
@@ -154,17 +167,28 @@ def transform(args):
     # print(vars(args))
     return args
 
-def display(route, args):
+
+def display_route(route, args):
+
+    if isinstance(route, str):
+        print(DIVIDER)
+        print('{:^52}'.format(*["GateCrasher - " + route]))
+        print(DIVIDER)
+        return
 
     print(DIVIDER)
-    print('{:^52}'.format(*['GateCrasher - Results']))
+    print('{:^52}'.format(*["GateCrasher - " + args.start +
+          " to " + args.end + " in " + str(len(route)) + " jumps"]))
     print(DIVIDER)
-    print('{:^52}'.format(*[args.start + " to " + args.end + " in " + str(len(route)) + " jumps"]))
-    print(DIVIDER)
-    print('{:^18} {:^18}  {:^18}'.format(*['System name', 'Sec', 'Kills']))
+    print('{:^18} {:^18}  {:^18}'.format(
+        *['System name', 'Sec', 'Kills (approximate)']))
     for row in route:
         print('{:^18} {:^18}  {:^18}'.format(*row))
     print(DIVIDER)
+    return
+
+
+def display_error(args):
     return
 
 
@@ -173,8 +197,7 @@ def main():
     args = get_args()
     args = transform(args)
 
-
-    display(find_route(args), args)
+    display_route(find_route(args), args)
 
 
 if __name__ == "__main__":
