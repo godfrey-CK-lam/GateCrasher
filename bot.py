@@ -14,6 +14,8 @@ HEADERS = {
     "Accept": "application/json",
 }
 
+DIVIDER = ("======================================================")
+
 # parse a system name to the id
 
 
@@ -27,10 +29,14 @@ def get_id(system):
     CONN.request("POST", "/universe/ids", payload, HEADERS)
 
     res = CONN.getresponse()
-    data = json.loads(res.read())
 
+    data = json.loads(res.read())
     actual = data.get("systems")
-    return actual[0]["id"]
+    try:
+        return actual[0]["id"]
+    except:
+        print(system + " is an invalid system name (please check the spelling!)")
+        exit(1)
 
 
 # parse a system ID to a name
@@ -54,14 +60,14 @@ def get_info(id):
     data = res.read()
     jsonData = json.loads(data)
 
-    return [jsonData["name"], round(jsonData["security_status"], 1), get_kills(id)]
+    return [jsonData["name"], str(round(jsonData["security_status"], 1)), str(get_kills(id))]
 
 
 def get_kills(id):
     CONN.request("GET", "/universe/system_kills", headers=HEADERS)
 
     res = CONN.getresponse()
- 
+
     data = json.loads(res.read())
 
     kills = 0
@@ -100,8 +106,11 @@ def find_route(args):
 
 
 def get_args():
+
+ 
+
     parser = argparse.ArgumentParser(
-        description="Displays information about a route from one system to another"
+        description="Displays information about a route from one system to another", epilog="HELP"
     )
     parser.add_argument("start", type=str, help=("The starting system"))
     parser.add_argument("end", type=str, help="The destination system")
@@ -145,12 +154,27 @@ def transform(args):
     # print(vars(args))
     return args
 
+def display(route, args):
+
+    print(DIVIDER)
+    print('{:^52}'.format(*['GateCrasher - Results']))
+    print(DIVIDER)
+    print('{:^52}'.format(*[args.start + " to " + args.end + " in " + str(len(route)) + " jumps"]))
+    print(DIVIDER)
+    print('{:^18} {:^18}  {:^18}'.format(*['System name', 'Sec', 'Kills']))
+    for row in route:
+        print('{:^18} {:^18}  {:^18}'.format(*row))
+    print(DIVIDER)
+    return
+
 
 def main():
 
     args = get_args()
     args = transform(args)
-    print(find_route(args))
+
+
+    display(find_route(args), args)
 
 
 if __name__ == "__main__":
