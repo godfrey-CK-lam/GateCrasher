@@ -8,9 +8,9 @@ import datetime
 def parseName(system):
     
     payload =  "[\n  \"string\"\n]"
-    theData = json.loads(payload)
-    theData[0] = system
-    payload = json.dumps(theData, indent=2)
+    myPayload = json.loads(payload)
+    myPayload[0] = system
+    payload = json.dumps(myPayload, indent=2)
    
     conn.request("POST", "/universe/ids", payload, headers)
 
@@ -25,25 +25,25 @@ def parseName(system):
 # parse a system ID to a name
 def parseID(id):
     payload =  "[\n  \"string\"\n]"
-    theData = json.loads(payload)
-    theData[0] = str(id)
-    payload = json.dumps(theData, indent=2)
+    myPayload = json.loads(payload)
+    myPayload[0] = str(id)
+    payload = json.dumps(myPayload, indent=2)
 
     conn.request("POST", "/universe/names", payload, headers)
 
     res = conn.getresponse()
     data = res.read()
-    parseData = json.loads(data)    
-    return parseData[0]['name']
+    jsonData = json.loads(data)    
+    return jsonData[0]['name']
 
 def getInfo(id):
     conn.request("GET", "/universe/systems/" + str(id), headers=headers)
     
     res = conn.getresponse()
     data = res.read()
-    parseData = json.loads(data)   
+    jsonData = json.loads(data)   
     
-    return [parseData['name'], round(parseData['security_status'], 1), getKills(id)]
+    return [jsonData['name'], round(jsonData['security_status'], 1), getKills(id)]
 
 def getKills(id):
     conn.request("GET", "/universe/system_kills", headers=headers)
@@ -63,13 +63,18 @@ def findRoute(start, end):
     startid = parseName(start)
     endid = parseName(end)
 
-    payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\":" + preference + ",\n  \"security_penalty\": 50\n}"
+    #payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\":" + preference + ",\n  \"security_penalty\": 50\n}"
+
+    payload = "{\n  \"avoid_systems\": [\n    30000001\n  ],\n  \"connections\": [\n    {\n      \"from\": 30000001,\n      \"to\": 30000001\n    }\n  ],\n  \"preference\": \"Shorter\",\n  \"security_penalty\": 50\n}"
+    myPayload = json.loads(payload)
+    myPayload['preference'] = preference
+    payload = json.dumps(myPayload, indent=2)
+    
     conn.request("POST", "/route/"+str(startid)+"/"+str(endid)+"", payload, headers)
 
     res = conn.getresponse()
     data = res.read()
     theData = json.loads(data)    
-
     idList = (theData['route'])
     route = []
 
@@ -78,18 +83,15 @@ def findRoute(start, end):
 
     return route
 
-
-
-
-parser = argparse.ArgumentParser(description="argument parser")
-parser.add_argument('start', type=str)
-parser.add_argument('end', type=str)
-parser.add_argument('preference', type = str)
+parser = argparse.ArgumentParser(description="Displays information about a route from one system to another")
+parser.add_argument('start', type=str,help=("The starting system"))
+parser.add_argument('end', type=str, help="The destination system")
+parser.add_argument('preference', type=str, help="Route preference (shorter, lessSecure, safer)")
 args = parser.parse_args()
 
 start = args.start
 end = args.end
-preference = '\"' + args.preference + '\"'
+preference = args.preference
 
 conn = http.client.HTTPSConnection("esi.evetech.net")
 
