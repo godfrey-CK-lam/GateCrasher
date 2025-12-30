@@ -16,7 +16,18 @@ HEADERS = {
 
 DIVIDER = ("===========================================================")
 
-# parse a system name to the id
+# for most of these functions, it will involve:
+# deconstructing the json payload into a python list
+# inserting the users inputted data, into the python list
+# constructing the python list back into a json payload
+
+# to manipulate the returned values from the api calls
+# the json result is loaded back into a list
+# and then the data is manipulated, accordingly
+
+# take a system name
+# returns the id of the system
+# or an error message, if the system doesnt exist
 
 
 def get_id(system):
@@ -38,7 +49,8 @@ def get_id(system):
         return system + " is not a valid system"
 
 
-# parse a system ID to a name
+# get a system name from the id
+# returns a name of a system, corresponding to the id
 def get_name(id):
     payload = '[\n  "string"\n]'
     user_payload = json.loads(payload)
@@ -52,6 +64,8 @@ def get_name(id):
     return json.loads(data)[0]["name"]
 
 
+# takes in a system id
+# returns the name, security status, and kill count
 def get_info(id):
     CONN.request("GET", "/universe/systems/" + str(id), headers=HEADERS)
 
@@ -60,6 +74,8 @@ def get_info(id):
     jsonData = json.loads(data)
 
     return [jsonData["name"], str(round(jsonData["security_status"], 1)), str(get_kills(id))]
+
+# helper function for get info to get the kill count of a system
 
 
 def get_kills(id):
@@ -76,6 +92,8 @@ def get_kills(id):
         kills = result["pod_kills"] + result["ship_kills"]
     return kills
 
+# find the route, based on all the user inputs
+
 
 def find_route(args):
     startid = get_id(args.start)
@@ -87,11 +105,11 @@ def find_route(args):
     user_payload["avoid_systems"] = args.avoid
     payload = json.dumps(user_payload, indent=2)
 
-   
+    # checking to see if any errors were present when parsing the names
     if isinstance(startid, str):
         return startid
     elif isinstance(endid, str):
-        return(endid)
+        return (endid)
 
     CONN.request(
         "POST", "/route/" + str(startid) + "/" +
@@ -102,24 +120,26 @@ def find_route(args):
 
     data = json.loads(res.read())
 
+    # checking if any errors were present, usually indicating a route isnt possible
+    # this is usually the result of a route involving a start or end system in Pochven
+    # since this tool doesnt take filaments into consideration
     if 'error' in data:
         return str("No route exists from " + args.start + " to " + args.end)
-        
 
     idList = data["route"]
 
     route = []
-
+    # build a list of all the system names
     for i in range(len(idList)):
         route.append(get_info(idList[i]))
 
     return route
 
-
+# getting user arguments for use 
 def get_args():
 
     help_text = """
-    Tips: For systems with names with spaces, such as New Caldari, wrap the system in speech marks (e.g New Caldari)
+    Tips: For systems with names with spaces, such as New Caldari, wrap the system in speech marks (e.g "New Caldari")
     """
 
     parser = argparse.ArgumentParser(
@@ -144,10 +164,8 @@ def get_args():
 
     return parser.parse_args()
 
-
+# parse user arguments, into workable data
 def transform(args):
-
-    # print(vars(args))
 
     if args.preference == "short":
         args.preference = "Shorter"
@@ -156,18 +174,19 @@ def transform(args):
     elif args.preference == "safe":
         args.preference = "Safer"
     else:
+        # default value if no preference is listed
         args.preference = "Shorter"
 
     if args.avoid:
         for systems in range(len(args.avoid)):
             args.avoid[systems] = get_id(args.avoid[systems])
     else:
+        # default value used by api to indicate no avoided systems
         args.avoid = [30000001]
-
-    # print(vars(args))
+    
     return args
 
-
+# display the interface in a CLI
 def display_route(route, args):
 
     if isinstance(route, str):
@@ -183,22 +202,16 @@ def display_route(route, args):
           " to " + args.end + " in " + str(len(route)) + " jumps"]))
     print(DIVIDER)
     print('{:^19} {:^19}  {:^19}'.format(
-        *['System name', 'Sec', 'Kills (approx)']))
+        *['System name', 'Sec', 'Kills (last 1h)']))
     for row in route:
         print('{:^19} {:^19}  {:^19}'.format(*row))
     print(DIVIDER)
     return
 
-
-def display_error(args):
-    return
-
-
+# executor function
 def main():
-
     args = get_args()
     args = transform(args)
-
     display_route(find_route(args), args)
 
 
